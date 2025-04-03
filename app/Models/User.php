@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Model;
 
 class User extends Authenticatable
 {
@@ -44,5 +45,19 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    
+    /**
+     * Die Playlisten, die zu diesem Benutzer gehören.
+     *
+     * Diese Methode definiert eine n:m-Beziehung zwischen Benutzern und Playlisten.
+     * Der Benutzer kann mehrere Playlisten haben, und jede Playlist kann von mehreren Benutzern genutzt werden.
+     * Die Pivot-Tabelle `user_playlist` verbindet die beiden Modelle.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function playlists()
+    {
+        return $this->belongsToMany(Playlist::class, 'user_playlist');
     }
 }

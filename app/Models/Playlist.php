@@ -27,7 +27,11 @@ class Playlist extends Model
     ];
     
     /**
-     * Gibt die Songs zurück, die in dieser Playlist enthalten sind.
+     * Die Songs, die zu dieser Playlist gehören.
+     *
+     * Diese Methode definiert eine n:m-Beziehung zwischen Songs und Playlisten.
+     * Die Playlist kann mehrere Songs haben, und jeder Song kann in mehreren Playlisten vorkommen.
+     * Die Pivot-Tabelle `playlist_song` verbindet die beiden Modelle.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
@@ -35,5 +39,19 @@ class Playlist extends Model
     {
         return $this->belongsToMany(Song::class, 'playlist_song')
         ->withTimestamps();
+    }
+    
+    /**
+     * Die Playlisten, die zu diesem Benutzer gehören.
+     *
+     * Diese Methode definiert eine n:m-Beziehung zwischen Benutzern und Playlisten.
+     * Der Benutzer kann mehrere Playlisten haben, und jede Playlist kann von mehreren Benutzern genutzt werden.
+     * Die Pivot-Tabelle `user_playlist` verbindet die beiden Modelle.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_playlist');
     }
 }
