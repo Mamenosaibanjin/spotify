@@ -20,56 +20,84 @@ class PlaylistSearchController extends Controller
     public function search(Request $request)
     {
         $playlists = [];
+        $query = $request->input('query');
         
         // Token überprüfen und ggf. erneuern
         $accessToken = $this->getValidAccessToken();
-
+        
         if (!$accessToken) {
-            // Keine Weiterleitung zur Startseite, sondern eine Fehlermeldung anzeigen
             return view('playlists.search')->withErrors('Bitte melde dich mit deinem Spotify-Konto an, um Playlists zu suchen.');
         }
         
-        // Überprüfen, ob eine Suche durchgeführt wurde
-        if ($request->has('query')) {
-            $query = $request->input('query'); // Der eingegebene Suchbegriff
+        if ($query) {
+            $response = null;
             
-            // API-Anfrage an Spotify senden
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
-            ])->get('https://api.spotify.com/v1/search', [
-                'q' => $query,
-                'type' => 'playlist',
-                'market' => 'DE',
-                'limit' => 10,
-            ]);
-            
-            // Falls das Token abgelaufen ist (401 Unauthorized), erneuern und erneut versuchen
-            if ($response->status() == 401) {
-                $accessToken = $this->refreshAccessToken();
-                if ($accessToken) {
-                    $response = Http::withHeaders([
-                        'Authorization' => 'Bearer ' . $accessToken,
-                    ])->get('https://api.spotify.com/v1/search', [
-                        'q' => $query,
-                        'type' => 'playlist',
-                        'market' => 'DE',
-                        'limit' => 10,
-                    ]);
-                } else {
-                    // Bei fehlgeschlagener Token-Aktualisierung eine Fehlermeldung ausgeben
-                    return view('playlists.search')->withErrors('Spotify-Authentifizierung fehlgeschlagen. Bitte versuche es später erneut.');
+            if (filter_var($query, FILTER_VALIDATE_URL)) {
+                // Suche nach Playlist-URL
+                $playlistId = basename($query);
+                $response = $this->searchById($accessToken, $playlistId);
+            } elseif (strlen($query) == 22 && ctype_alnum($query)) {
+                // Teste zuerst, ob es sich um eine Playlist-ID handelt
+                $response = $this->searchById($accessToken, $query);
+                
+                // Falls die Playlist-ID-Suche fehlschlägt, suche stattdessen nach Namen
+                if ($response->failed()) {
+                    $response = $this->searchByName($accessToken, $query);
                 }
+            } else {
+                // Standard-Namenssuche
+                $response = $this->searchByName($accessToken, $query);
             }
             
-            // Überprüfen, ob die API-Anfrage erfolgreich war
-            if ($response->successful()) {
+            if ($response && $response->successful()) {
                 $data = $response->json();
-                $playlists = $data['playlists']['items'] ?? []; // Extrahieren der Playlist-Daten
+                
+                // Falls eine einzelne Playlist zurückgegeben wird (ID-Suche)
+                if (isset($data['name'])) {
+                    $playlists = [$data];
+                } else {
+                    $playlists = $data['playlists']['items'] ?? [];
+                }
             }
         }
         
         return view('playlists.search', compact('playlists'));
     }
+    
+    private function searchById($accessToken, $playlistId)
+    {
+        return Http::withHeaders([
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->get("https://api.spotify.com/v1/playlists/{$playlistId}", [
+            'market' => 'DE',
+            'fields' => 'name,external_urls,owner,tracks',
+        ]);
+    }
+    
+    private function searchByName($accessToken, $query)
+    {
+        return Http::withHeaders([
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->get('https://api.spotify.com/v1/search', [
+            'q' => $query,
+            'type' => 'playlist',
+            'market' => 'DE',
+            'limit' => 10,
+        ]);
+    }
+    
+    // Hilfsmethode zur Bestimmung der richtigen URL basierend auf der Sucheingabe
+    private function getSearchUrl($query)
+    {
+        // Wenn die Eingabe eine Playlist-ID oder URL ist, verwenden wir den spezifischen Endpunkt
+        if (filter_var($query, FILTER_VALIDATE_URL) || (strlen($query) == 22 && ctype_alnum($query))) {
+            return "https://api.spotify.com/v1/playlists/{$query}";
+        }
+        
+        // Standard-Suche nach Name
+        return 'https://api.spotify.com/v1/search';
+    }
+    
     
     /**
      * Holt ein gültiges Access-Token aus der Session oder erneuert es, falls es abgelaufen ist.
