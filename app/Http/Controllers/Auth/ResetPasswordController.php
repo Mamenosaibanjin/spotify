@@ -26,4 +26,22 @@ class ResetPasswordController extends Controller
      * @var string
      */
     protected $redirectTo = '/home';
+    
+    /**
+     * Überschreibt die Standard-Login-Validierung mit eigenen Fehlertexten.
+     */
+    protected function validateResetPassword(Request $request)
+    {
+        dd('validateLogin wure aufgerufen');
+        $messages = [
+            'email.required' => 'Bitte gib deine E-Mail-Adresse ein.',
+            'email.email' => 'Das ist keine gültige E-Mail-Adresse.',
+            'password.required' => 'Bitte gib dein Passwort ein.',
+        ];
+        
+        $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ], $messages);
+    }
 }
