@@ -1,6 +1,3 @@
-@extends('layouts.app')
-
-@section('content')
 <div class="container">
     <h1>Playlist-Suche</h1>
 
@@ -15,7 +12,7 @@
     </div>
     
     <!-- Suchformular -->
-    <form action="{{ route('playlists.search') }}" method="GET">
+    <form action="{{ route('playlists.index') }}" method="GET">
         <div class="mb-3">
             <label for="query" class="form-label">Playlist suchen:</label>
             <input type="text" id="query" name="query" class="form-control" value="{{ request('query') }}" required>
@@ -27,7 +24,12 @@
     @if(!empty($playlists))
         <h2 class="mt-4">Gefundene Playlisten</h2>
         <ul class="list-group">
-            @foreach($playlists as $playlist)
+        @foreach($playlists as $playlist)
+            @if(
+                isset($playlist['external_urls']['spotify']) || 
+                isset($playlist['name']) || 
+                isset($playlist['owner']['display_name'])
+            )
                 <li class="list-group-item">
                     @if(isset($playlist['external_urls']['spotify']))
                         <a href="{{ $playlist['external_urls']['spotify'] }}" target="_blank">Zur Playlist auf Spotify</a>
@@ -41,11 +43,12 @@
                         <p>Von: {{ $playlist['owner']['display_name'] }}</p>
                     @endif
                 </li>
-            @endforeach
-        </ul>
+            @endif
+        @endforeach
+    </ul>
+
     @elseif(request()->has('query'))
         <p class="mt-3">Keine Playlisten gefunden.</p>
     @endif
 
 </div>
-@endsection

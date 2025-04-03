@@ -66,5 +66,4 @@ Route::get('/auth/callback', function (Request $request) {
 // Playlist-Routen nach Login (normaler Auth)
 Route::middleware('auth')->group(function () {
     Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists.index');
-    Route::get('/playlists/search', [PlaylistSearchController::class, 'search'])->name('playlists.search');
 });

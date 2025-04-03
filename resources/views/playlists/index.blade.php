@@ -4,23 +4,35 @@
 <div class="container">
     <h1>Deine Playlisten</h1>
 
-    <!-- Überprüfen, ob der Benutzer Playlisten hat -->
-    @if($playlists->isEmpty())  <!-- Falls keine Playlisten vorhanden sind -->
-        <p>Du hast noch keine Playlisten.</p>
-    @else
-        <!-- Anzeige der Playlisten in einer Liste -->
-        <ul class="list-group">
-            @foreach($playlists as $playlist)
-                <li class="list-group-item">
-                    {{ $playlist->name }} <!-- Der Name der Playlist wird angezeigt -->
-                </li>
-            @endforeach
-        </ul>
-
-        <!-- Paginierung: Zeigt Navigationslinks an, um durch die Playlisten-Seiten zu navigieren -->
-        <div class="mt-3">
-            {{ $playlists->links() }}  <!-- Laravel-Links für die Paginierung (next/prev) -->
+    <!-- Gespeicherte Playlisten -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Gespeicherte Playlisten</h2>
         </div>
-    @endif
+        <div class="card-body">
+            @if($savedPlaylists->isEmpty())  
+                <p>Du hast noch keine Playlisten.</p>
+            @else
+                <ul class="list-group">
+                    @foreach($savedPlaylists as $savedPlaylist)
+                        <li class="list-group-item">
+                            {{ $savedPlaylist->name }}
+                        </li>
+                    @endforeach
+                </ul>
+
+                <!-- Paginierung -->
+                <div class="mt-3">
+                    {{ $savedPlaylists->links() }}
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Hinweis und Suchformular -->
+    <div class="mt-4">
+        @include('playlists.search')
+    </div>
+
 </div>
 @endsection
