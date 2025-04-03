@@ -23,6 +23,12 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home');
+        // Wenn der Benutzer bereits bei Spotify authentifiziert ist, leite ihn auf das Dashboard weiter
+        if (session()->has('spotify_access_token')) {
+            return redirect()->route('playlists.search');
+        }
+        
+        // Wenn der Benutzer noch nicht bei Spotify authentifiziert ist, leite zur Spotify-Login-Seite weiter
+        return redirect('/auth/spotify');
     }
 }
