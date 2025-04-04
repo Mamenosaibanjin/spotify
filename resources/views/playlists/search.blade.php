@@ -30,19 +30,35 @@
                 isset($playlist['name']) || 
                 isset($playlist['owner']['display_name'])
             )
-                <li class="list-group-item">
-                    @if(isset($playlist['external_urls']['spotify']))
-                        <a href="{{ $playlist['external_urls']['spotify'] }}" target="_blank">Zur Playlist auf Spotify</a>
-                    @endif
+            <li class="list-group-item">
+                {{-- Cover-Bild --}}
+                @if(isset($playlist['images'][0]['url']))
+                    <img src="{{ $playlist['images'][0]['url'] }}" alt="Playlist-Cover" width="150">
+                @endif
     
-                    @if(isset($playlist['name']))
-                        <p>{{ $playlist['name'] }}</p>
-                    @endif
+                {{-- Titel --}}
+                <h5>{{ $playlist['name'] ?? 'Kein Titel vorhanden' }}</h5>
     
-                    @if(isset($playlist['owner']['display_name']))
-                        <p>Von: {{ $playlist['owner']['display_name'] }}</p>
-                    @endif
-                </li>
+                {{-- Playlist-ID --}}
+                <p><strong>ID:</strong> {{ $playlist['id'] ?? 'Unbekannt' }}</p>
+    
+                {{-- Beschreibung --}}
+                @if(!empty($playlist['description']))
+                    <p><strong>Beschreibung:</strong> {!! $playlist['description'] !!}</p>
+                @endif
+    
+                {{-- Eigentümer --}}
+                @if(isset($playlist['owner']['display_name']))
+                    <p><strong>Von:</strong> {{ $playlist['owner']['display_name'] }}</p>
+                @endif
+    
+                {{-- Spotify-Link --}}
+                @if(isset($playlist['external_urls']['spotify']))
+                    <a href="{{ $playlist['external_urls']['spotify'] }}" target="_blank">Zur Playlist auf Spotify</a>
+                @endif
+    
+
+            </li>
             @endif
         @endforeach
     </ul>
