@@ -58,7 +58,7 @@ Route::get('/auth/callback', function (Request $request) {
         ]);
 
         // Weiterleitung zur Playlist-Suche oder Dashboard
-        return redirect()->route('playlists');
+        return redirect()->route('playlists.index');
     } else {
         return response()->json(['error' => 'Unable to fetch access token'], 500);
     }
