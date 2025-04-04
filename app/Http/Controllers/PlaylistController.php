@@ -47,7 +47,7 @@ class PlaylistController extends Controller
     private function searchSpotifyPlaylists($query)
     {
         $accessToken = $this->getValidAccessToken();
-        
+
         if (!$accessToken) {
             return [];
         }
@@ -154,7 +154,7 @@ class PlaylistController extends Controller
         $refreshToken = session('spotify_refresh_token');
         
         if (!$refreshToken) {
-            return null;
+        //    return null;
         }
         
         $clientId = config('services.spotify.client_id');
@@ -166,7 +166,7 @@ class PlaylistController extends Controller
             'client_id' => $clientId,
             'client_secret' => $clientSecret,
         ]);
-        
+
         if ($response->successful()) {
             $data = $response->json();
             $newAccessToken = $data['access_token'];
@@ -175,9 +175,9 @@ class PlaylistController extends Controller
                 'spotify_access_token' => $newAccessToken,
                 'spotify_token_expires' => now()->addSeconds($data['expires_in']),
             ]);
-            
+
             return $newAccessToken;
-        }
+        } 
         
         return null;
     }

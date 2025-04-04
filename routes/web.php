@@ -28,6 +28,7 @@ Route::get('/auth/spotify', function () {
 
 // Callback-Route für Spotify
 Route::get('/auth/callback', function (Request $request) {
+    echo "DCallBack";
     $code = $request->query('code'); // Der Code, der von Spotify zurückgegeben wurde
 
     if (!$code) {
@@ -57,7 +58,7 @@ Route::get('/auth/callback', function (Request $request) {
         ]);
 
         // Weiterleitung zur Playlist-Suche oder Dashboard
-        return redirect()->route('playlists.search');
+        return redirect()->route('playlists');
     } else {
         return response()->json(['error' => 'Unable to fetch access token'], 500);
     }

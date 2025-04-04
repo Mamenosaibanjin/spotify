@@ -25,7 +25,7 @@ class HomeController extends Controller
     {
         // Wenn der Benutzer bereits bei Spotify authentifiziert ist, leite ihn auf das Dashboard weiter
         if (session()->has('spotify_access_token')) {
-            return redirect()->route('playlists.search');
+            return redirect()->route('playlists.index');
         }
         
         // Wenn der Benutzer noch nicht bei Spotify authentifiziert ist, leite zur Spotify-Login-Seite weiter
