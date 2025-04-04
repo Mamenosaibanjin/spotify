@@ -181,4 +181,72 @@ class PlaylistController extends Controller
         
         return null;
     }
+    
+    /**
+     * Analysiert eine Playlist anhand der Playlist-ID und gibt die Playlist-Daten sowie die Audio-Features der Tracks zurück.
+     *
+     * Diese Methode ruft Informationen über eine Playlist von der Spotify API ab und extrahiert die IDs der enthaltenen Tracks.
+     * Anschließend wird ein weiterer API-Request an Spotify gesendet, um die Audio-Features der Tracks zu erhalten.
+     * Die Methode gibt eine JSON-Antwort mit den Playlist-Daten und den Audio-Features der Tracks zurück.
+     *
+     * @param string $id Die ID der Playlist, die analysiert werden soll.
+     * @return \Illuminate\Http\JsonResponse JSON-Antwort mit Playlist-Daten und Audio-Features oder einem Fehler.
+     */
+    public function analyse($id)
+    {
+        // Holt ein gültiges Access-Token, um auf die Spotify API zuzugreifen.
+        $accessToken = $this->getValidAccessToken();
+        
+        // Wenn kein gültiges Access-Token vorhanden ist, gibt es eine 401-Antwort mit einer Fehlermeldung zurück.
+        if (!$accessToken) {
+            return response()->json(['error' => 'Kein gültiges Token'], 401);
+        }
+        
+        // Holt sich die Playlist-Daten von der Spotify API.
+        $playlistResponse = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->get("https://api.spotify.com/v1/playlists/{$id}");
+        
+        // Überprüft, ob die Playlist erfolgreich abgerufen wurde, andernfalls gibt es eine 404-Antwort zurück.
+        if (!$playlistResponse->successful()) {
+            return response()->json(['error' => 'Playlist nicht gefunden'], 404);
+        }
+        
+        // Die Antwort von der API in ein Array umwandeln, das die Playlist-Daten enthält.
+        $playlistData = $playlistResponse->json();
+        
+        // Extrahiert die Track-IDs aus den Playlist-Daten. Nur die IDs der Tracks werden benötigt.
+        // Die Funktion `pluck('track.id')` holt sich die Track-IDs aus den jeweiligen Track-Objekten.
+        // `filter()` stellt sicher, dass nur gültige IDs berücksichtigt werden, und `take(100)` begrenzt die Anzahl der IDs auf maximal 100 (Spotify-API-Grenze).
+        $trackIds = collect($playlistData['tracks']['items'])
+        ->pluck('track.id')
+        ->filter()
+        ->take(100);
+        
+        // Ein leeres Array für die Audio-Features der Tracks.
+        $audioFeatures = [];
+        
+        // Wenn Track-IDs vorhanden sind, werden die Audio-Features der Tracks abgerufen.
+        if ($trackIds->isNotEmpty()) {
+            // Ruft die Audio-Features für die extrahierten Track-IDs von der Spotify API ab.
+            $featuresResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+            ])->get('https://api.spotify.com/v1/audio-features', [
+                'ids' => $trackIds->implode(','),
+            ]);
+            
+            // Wenn die Anfrage für die Audio-Features erfolgreich war, werden die Audio-Features der Tracks in das Array $audioFeatures gespeichert.
+            if ($featuresResponse->successful()) {
+                $audioFeatures = $featuresResponse->json()['audio_features'];
+            }
+        }
+        
+        // Gibt eine JSON-Antwort zurück, die die Playlist-Daten und die Audio-Features enthält.
+        return response()->json([
+            'playlist' => $playlistData,
+            'audio_features' => $audioFeatures,
+        ]);
+    }
 }
+
+

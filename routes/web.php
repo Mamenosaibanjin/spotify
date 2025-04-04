@@ -68,3 +68,6 @@ Route::get('/auth/callback', function (Request $request) {
 Route::middleware('auth')->group(function () {
     Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists.index');
 });
+
+Route::get('/playlists/{id}/analyse', [PlaylistController::class, 'analyse'])->name('playlists.analyse');
+    
