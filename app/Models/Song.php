@@ -23,9 +23,11 @@ class Song extends Model
      */
     protected $fillable = [
         'title',
+        'spotify_id',
         'artist',
         'album',
         'duration',
+        'release_date',
     ];
     
     /**

@@ -23,6 +23,7 @@ class Playlist extends Model
      */
     protected $fillable = [
         'name',
+        'spotify_id',
         'cover_path',
     ];
     

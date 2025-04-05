@@ -15,6 +15,7 @@ return new class extends Migration {
         Schema::create('songs', function (Blueprint $table) {
             $table->id(); // Primärschlüssel (Auto-Inkrement)
             $table->string('title'); // Titel des Songs
+            $table->string('spotify_id'); // Spotify-ID
             $table->string('artist'); // Name des Künstlers/Bands
             $table->string('album')->nullable(); // Name des Albums (optional)
             $table->integer('duration'); // Dauer des Songs in Sekunden
