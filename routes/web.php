@@ -71,5 +71,6 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/playlists/{id}/analyse', [PlaylistController::class, 'analyse'])->name('playlists.analyse');
 Route::post('/playlists/store', [PlaylistController::class, 'store'])->name('playlists.store');
+Route::get('/playlists/{id}', [PlaylistController::class, 'show'])->name('playlists.show');
 
     

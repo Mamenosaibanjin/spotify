@@ -24,7 +24,10 @@ class PlaylistController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $savedPlaylists = $user->playlists()->paginate(10); // Paginierte Playlists des Nutzers
+        $savedPlaylists = $user->playlists()
+            ->orderByRaw('cover_path IS NULL')  // NULLs werden "größer", also ans Ende sortiert
+            ->orderBy('name')                   // dann alphabetisch
+            ->paginate(5);                      // Paginierte Playlists des Nutzers
         
         $query = $request->query('query');
         $playlists = [];
