@@ -48,6 +48,6 @@ class Song extends Model
      */
     public function audioFeature()
     {
-        return $this->hasOne(SongAudioFeature::class);
+        return $this->hasOne(SongAudioFeature::class, 'song_id');
     }
 }

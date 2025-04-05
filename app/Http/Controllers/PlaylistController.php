@@ -312,6 +312,34 @@ class PlaylistController extends Controller
         
         return response()->json(['message' => 'Playlist gespeichert']);
     }
+    
+    public function show($id)
+    {
+        // Lade die Playlist mit den Songs und deren Audio Features
+        $playlist = Playlist::with(['songs.audioFeature']) // Songs mit Audio Features laden
+        ->findOrFail($id);
+        
+        // Filterung und Sortierung für Tracks
+        $tracksQuery = $playlist->songs(); // Holt alle Songs der Playlist als Builder
+        
+        // Wenn ein Suchbegriff übergeben wird, filtere nach dem Titel der Songs
+        if ($search = request('search')) {
+            $tracksQuery->where('title', 'like', '%' . $search . '%');
+        }
+        
+        // Sortierung der Tracks nach dem angegebenen Parameter (loudness, tempo, etc.)
+        if ($sortBy = request('sort_by')) {
+            $tracksQuery->orderBy($sortBy, request('sort_direction', 'asc')); // Default ist 'asc' für aufsteigend
+        }
+        
+        // Hole die Tracks mit Paginierung
+        $tracks = $tracksQuery->paginate(10); // Paginierung auf den Builder anwenden
+        
+        // Rückgabe an die View
+        return view('playlists.show', compact('playlist', 'tracks'));
+    }
+    
+    
 }
 
 
