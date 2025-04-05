@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Playlist;
+use App\Models\PlaylistSong;
+use App\Models\Song;
 use App\Models\User;
+use App\Models\UserPlaylist;
 use Illuminate\Support\Facades\Http;
 
 class PlaylistController extends Controller
@@ -246,6 +250,64 @@ class PlaylistController extends Controller
             'playlist' => $playlistData,
             'audio_features' => $audioFeatures,
         ]);
+    }
+    
+    /**
+     * Speichert eine Playlist zusammen mit ihren Songs und verknüpft sie mit einem Benutzer.
+     *
+     * Diese Methode überprüft, ob die Playlist bereits existiert. Falls nicht, wird sie erstellt.
+     * Anschließend wird die Verbindung zwischen Benutzer und Playlist in der Tabelle `user_playlists` gespeichert.
+     * Danach werden alle übermittelten Songs gespeichert, falls sie noch nicht existieren, und mit der Playlist verknüpft.
+     * Die Methode erwartet, dass die Playlist-Daten, Base64-encodiertes Cover-Bild und eine Liste von Tracks im Request vorhanden sind.
+     *
+     * @param \Illuminate\Http\Request $request HTTP-Request mit den Feldern:
+     *                                          - playlist_id (Spotify-ID der Playlist)
+     *                                          - playlist_name (Name der Playlist)
+     *                                          - cover_data (Base64-Daten des Covers)
+     *                                          - user_id (ID des aktuellen Benutzers)
+     *                                          - tracks (Array mit Track-Daten: id, title, artist, duration, album, release_date)
+     * @return \Illuminate\Http\JsonResponse JSON-Antwort mit Bestätigung der Speicherung.
+     */
+    public function store(Request $request)
+    {
+        // Playlist speichern (falls noch nicht vorhanden)
+        $playlist = Playlist::firstOrCreate(
+            ['spotify_id' => $request->playlist_id],
+            [
+                'name' => $request->playlist_name,
+                'cover_path' => $request->cover_data
+            ]
+            );
+        
+        // Verbindung zur User-Playlist speichern
+        UserPlaylist::firstOrCreate([
+            'user_id' => $request->user_id,
+            'playlist_id' => $playlist->id
+        ]);
+        
+        // Songs speichern
+        foreach ($request->tracks as $track) {
+            $song = Song::firstOrCreate(
+                ['spotify_id' => $track['id']],
+                [
+                    'title' => $track['title'],
+                    'artist' => $track['artist'],
+                    'duration' => $track['duration'],
+                    'album' => $track['album'],
+                    'release_date' => !empty($track['release_date'])
+                    ? date('Y-m-d', strtotime($track['release_date']))
+                    : null
+                ]
+                );
+            
+            // Playlist-Song Verbindung speichern
+            PlaylistSong::firstOrCreate([
+                'playlist_id' => $playlist->id,
+                'song_id' => $song->id
+            ]);
+        }
+        
+        return response()->json(['message' => 'Playlist gespeichert']);
     }
 }
 
