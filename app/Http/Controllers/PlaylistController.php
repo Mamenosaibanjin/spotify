@@ -136,7 +136,7 @@ class PlaylistController extends Controller
      *
      * @return string|null Gibt das gültige Access-Token zurück oder `null`, falls kein Token verfügbar ist.
      */
-    private function getValidAccessToken()
+    protected function getValidAccessToken()
     {
         $accessToken = session('spotify_access_token');
         $expiresAt = session('spotify_token_expires');
