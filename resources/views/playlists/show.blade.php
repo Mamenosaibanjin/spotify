@@ -62,7 +62,7 @@
                             <td>{{ $track->id }}</td>
                             <td>{{ $track->title }}</td>
                             <td>{{ $track->artist }}</td>
-                            <td>{{ gmdate("i:s", $track->duration) }}</td>
+                            <td>{{ gmdate("i:s", floor($track->duration / 1000)) }}</td>
                             <td>{{ $track->audioFeature->loudness ?? 'N/A' }}</td>
                             <td>{{ $track->audioFeature->tempo ?? 'N/A' }}</td>
                             <td>{{ $track->audioFeature->danceability ?? 'N/A' }}</td>
