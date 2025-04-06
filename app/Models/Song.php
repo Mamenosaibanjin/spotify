@@ -27,6 +27,7 @@ class Song extends Model
         'artist',
         'album',
         'duration',
+        'preview_url',
         'release_date',
     ];
     
