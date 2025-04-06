@@ -315,28 +315,118 @@ class PlaylistController extends Controller
     
     public function show($id)
     {
-        // Lade die Playlist mit den Songs und deren Audio Features
-        $playlist = Playlist::with(['songs.audioFeature']) // Songs mit Audio Features laden
-        ->findOrFail($id);
+        // Playlist mit Songs und deren Audio-Features laden
+        $playlist = Playlist::with('songs.audioFeature')->findOrFail($id);
         
-        // Filterung und Sortierung für Tracks
-        $tracksQuery = $playlist->songs(); // Holt alle Songs der Playlist als Builder
+        // Basis-Query für Songs in der Playlist
+        $songsQuery = \App\Models\Song::select('songs.*')
+        ->join('playlist_song', 'songs.id', '=', 'playlist_song.song_id')
+        ->leftJoin('song_audio_features', 'songs.id', '=', 'song_audio_features.song_id')
+        ->where('playlist_song.playlist_id', $id);
         
-        // Wenn ein Suchbegriff übergeben wird, filtere nach dem Titel der Songs
+        // Suche nach Songtitel oder Interpret
         if ($search = request('search')) {
-            $tracksQuery->where('title', 'like', '%' . $search . '%');
+            $songsQuery->where(function ($query) use ($search) {
+                $query->where('songs.title', 'like', '%' . $search . '%')
+                ->orWhere('songs.artist', 'like', '%' . $search . '%');
+            });
         }
         
-        // Sortierung der Tracks nach dem angegebenen Parameter (loudness, tempo, etc.)
-        if ($sortBy = request('sort_by')) {
-            $tracksQuery->orderBy($sortBy, request('sort_direction', 'asc')); // Default ist 'asc' für aufsteigend
+        // Filterung nach Dauer (in Sekunden)
+        if (request()->filled('duration_min') || request()->filled('duration_max')) {
+            $min = request('duration_min', 0) * 1000;
+            $max = request('duration_max', 3600) * 1000; // Beispiel: max. 1 Stunde
+            
+            // Exakte Übereinstimmung der Dauer
+            if (request()->has('exact_match_duration')) {
+                // Umrechnung der eingegebenen Zeit in Millisekunden
+                $exactDuration = request('duration_min') * 1000;
+                
+                // Die kleinste Millisekunde der angegebenen Sekunde (z.B. 3:58:000)
+                $minDuration = floor($exactDuration / 1000) * 1000;
+                
+                // Die größte Millisekunde der angegebenen Sekunde (z.B. 3:58:999)
+                $maxDuration = $minDuration + 999;
+                
+                // Wir fangen alle Lieder im Bereich dieser Millisekunden ein
+                $songsQuery->whereBetween('songs.duration', [$minDuration, $maxDuration]);
+            } else {
+                // Allgemeine Filterung nach Dauer
+                $songsQuery->whereBetween('songs.duration', [$min, $max]);
+            }
         }
         
-        // Hole die Tracks mit Paginierung
-        $tracks = $tracksQuery->paginate(10); // Paginierung auf den Builder anwenden
+        // Filterung nach Loudness (in dB)
+        if (request()->filled('loudness_min') || request()->filled('loudness_max')) {
+            $min = request('loudness_min', -60);
+            $max = request('loudness_max', 0);
+            if (request()->has('exact_match_loudness')) {
+                $songsQuery->where('song_audio_features.loudness', $min);
+            } else {
+                $songsQuery->whereBetween('song_audio_features.loudness', [$min, $max]);
+            }
+        }
         
-        // Rückgabe an die View
-        return view('playlists.show', compact('playlist', 'tracks'));
+        // Filterung nach Tempo (BPM)
+        if (request()->filled('tempo_min') || request()->filled('tempo_max')) {
+            $min = request('tempo_min', 40);
+            $max = request('tempo_max', 250);
+            if (request()->has('exact_match_tempo')) {
+                $songsQuery->where('song_audio_features.tempo', $min);
+            } else {
+                $songsQuery->whereBetween('song_audio_features.tempo', [$min, $max]);
+            }
+        }
+        
+        // Filterung nach Danceability (0.0 bis 1.0)
+        if (request()->filled('danceability_min') || request()->filled('danceability_max')) {
+            $min = request('danceability_min', 0.0);
+            $max = request('danceability_max', 1.0);
+            if (request()->has('exact_match_danceability')) {
+                $songsQuery->where('song_audio_features.danceability', $min);
+            } else {
+                $songsQuery->whereBetween('song_audio_features.danceability', [$min, $max]);
+            }
+        }
+        
+        // Sortierung
+        $sortableFields = [
+            'title' => 'songs.title',
+            'artist' => 'songs.artist',
+            'duration' => 'songs.duration',
+            'album' => 'songs.album',
+            'release_date' => 'songs.release_date',
+            'loudness' => 'song_audio_features.loudness',
+            'tempo' => 'song_audio_features.tempo',
+            'danceability' => 'song_audio_features.danceability',
+        ];
+        
+        // Sortierparameter aus dem GET-Parameter holen, z.B. "title_desc"
+        $sort = request('sort'); // Z.B. 'title_desc'
+        
+        if ($sort) {
+            // Sortierung aufteilen in Feld und Richtung
+            $sortParts = explode('_', $sort);
+            $sortByInput = $sortParts[0] ?? 'title';
+            $sortDirection = $sortParts[1] ?? 'asc';
+            
+            // Validierung und Zuordnung der Sortierrichtung
+            $sortDirection = $sortDirection === 'desc' ? 'desc' : 'asc';
+            
+            // Überprüfen, ob das Sortierfeld gültig ist
+            $sortBy = $sortableFields[$sortByInput] ?? 'songs.title';
+            
+            // Sortieren nach dem angegebenen Feld und der Richtung
+            $songsQuery->orderBy($sortBy, $sortDirection);
+        }
+        
+        // Paginierung
+        $songs = $songsQuery->with('audioFeature')->paginate(10)->appends(request()->query());
+        
+        return view('playlists.show', [
+            'playlist' => $playlist,
+            'tracks' => $songs,
+        ]);
     }
     
     
