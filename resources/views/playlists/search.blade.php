@@ -27,22 +27,20 @@
         @foreach($playlists as $playlist)
             @if(isset($playlist['external_urls']['spotify']) || isset($playlist['name']) || isset($playlist['owner']['display_name']))
                 <li class="list-group-item">
-                    @if(isset($playlist['external_urls']['spotify']))
-                        (Playlist) ID: {{ $playlist['id'] }}
-                    @endif
-    
-                    @if(isset($playlist['name']))
-                        <p>(Playlist) Name: {{ $playlist['name'] }}</p>
-                    @endif
     
                     @if(isset($playlist['images'][0]['url']))
                         @php
                             $coverUrl = $playlist['images'][0]['url'];
                             $coverData = base64_encode(file_get_contents($coverUrl));
+                            $mimeType = pathinfo($coverUrl, PATHINFO_EXTENSION) === 'png' ? 'image/png' : 'image/jpeg';
                         @endphp
-                        <p>(Playlist) Cover: {{ $coverData }}</p>
+                        <img src="data:{{ $mimeType }};base64,{{ $coverData }}" alt="Playlist Cover" style="max-width: 120px; float: left; padding-right: 20px;">
                     @endif
     
+                    @if(isset($playlist['name']))
+                        <p><h4>{{ $playlist['name'] }}</h4></p>
+                    @endif
+
                     <!-- Button, um die Analyse zu laden -->
                     <button class="btn btn-info analyse-playlist" data-playlist-id="{{ $playlist['id'] }}">Analyse anzeigen</button>
     
