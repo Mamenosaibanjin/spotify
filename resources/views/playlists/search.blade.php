@@ -27,24 +27,34 @@
         @foreach($playlists as $playlist)
             @if(isset($playlist['external_urls']['spotify']) || isset($playlist['name']) || isset($playlist['owner']['display_name']))
                 <li class="list-group-item">
-    
-                    @if(isset($playlist['images'][0]['url']))
-                        @php
+        
+                    @php
+                        $coverDataEncoded = null;
+                        $coverSrc = null;
+        
+                        if (isset($playlist['images'][0]['url'])) {
                             $coverUrl = $playlist['images'][0]['url'];
-                            $coverData = base64_encode(file_get_contents($coverUrl));
-                            $mimeType = pathinfo($coverUrl, PATHINFO_EXTENSION) === 'png' ? 'image/png' : 'image/jpeg';
-                        @endphp
-                        <img src="data:{{ $mimeType }};base64,{{ $coverData }}" alt="Playlist Cover" style="max-width: 120px; float: left; padding-right: 20px;">
+                            try {
+                                $coverRaw = file_get_contents($coverUrl);
+                                $coverDataEncoded = base64_encode($coverRaw);
+                                $mimeType = pathinfo($coverUrl, PATHINFO_EXTENSION) === 'png' ? 'image/png' : 'image/jpeg';
+                                $coverSrc = "data:{$mimeType};base64,{$coverDataEncoded}";
+                            } catch (\Exception $e) {
+                                // Optional: Log::error($e->getMessage());
+                            }
+                        }
+                    @endphp
+        
+                    @if($coverSrc)
+                        <img src="{{ $coverSrc }}" alt="Playlist Cover" style="max-width: 120px; float: left; padding-right: 20px;">
                     @endif
-    
+        
                     @if(isset($playlist['name']))
                         <p><h4>{{ $playlist['name'] }}</h4></p>
                     @endif
-
-                    <!-- Button, um die Analyse zu laden -->
+        
                     <button class="btn btn-info analyse-playlist" data-playlist-id="{{ $playlist['id'] }}">Analyse anzeigen</button>
-    
-                    <!-- Slide-Down Bereich für die Analyse -->
+        
                     <div class="playlist-analysis" id="analysis-{{ $playlist['id'] }}" style="display:none;">
                         <div class="analysis-header">
                             <p>{{ $playlist['description'] ?? 'Keine Beschreibung verfügbar.' }}</p>
@@ -52,19 +62,19 @@
                         <div class="analysis-tracks">
                             <h4>Tracks</h4>
                             <ul id="track-list-{{ $playlist['id'] }}"></ul>
-                            <!-- Speichern-Button am Ende der Track-Liste -->
-   							<button
+        
+                            <button
                                 class="btn btn-success save-playlist"
                                 data-playlist-id="{{ $playlist['id'] }}"
                                 data-playlist-name="{{ $playlist['name'] }}"
-                                data-cover="{{ $coverData }}"
+                                data-cover="{{ $coverDataEncoded }}"
                             >Speichern</button>
                         </div>
-    
                     </div>
                 </li>
             @endif
         @endforeach
+
 		</ul>
 
         <!-- jQuery und das Script für die Slide-Down Logik -->

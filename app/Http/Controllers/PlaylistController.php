@@ -61,7 +61,7 @@ class PlaylistController extends Controller
      * @param string $query Die Suchanfrage (Name, ID oder URL).
      * @return array Ein Array mit den gefundenen Playlists oder ein leeres Array bei Fehlern.
      */
-    private function searchSpotifyPlaylists($query)
+    protected function searchSpotifyPlaylists($query)
     {
         $accessToken = $this->getValidAccessToken();
         

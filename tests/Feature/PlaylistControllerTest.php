@@ -151,4 +151,100 @@ class PlaylistControllerTest extends TestCase
             $antwort = $controllerMock->analyse('abc123');
             $this->assertEquals(401, $antwort->getStatusCode());
     }
+    
+    /** @test */
+    public function gespeicherte_playlists_werden_aus_den_suchergebnissen_entfernt()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        
+        // Gespeicherte Playlist simulieren
+        $playlist = Playlist::factory()->create([
+            'spotify_id' => 'spotify123',
+            'name' => 'Bereits gespeichert'
+        ]);
+        $user->playlists()->attach($playlist);
+        
+        // Session mit Token simulieren
+        session(['spotify_access_token' => 'testtoken']);
+        
+        // Fake-Antworten von Spotify simulieren (hier z. B. direkt im Controller als Testhilfe)
+        $this->mock(\App\Http\Controllers\PlaylistController::class, function ($mock) use ($playlist) {
+            $mock->shouldAllowMockingProtectedMethods()
+            ->makePartial()
+            ->shouldReceive('searchSpotifyPlaylists')
+            ->andReturn([
+                ['id' => 'spotify123', 'name' => 'Bereits gespeichert'],
+                ['id' => 'spotify456', 'name' => 'Neue Playlist']
+            ]);
+        });
+            
+            $response = $this->get(route('playlists.index', ['query' => 'Test']));
+            
+            $response->assertStatus(200);
+            $response->assertViewHas('playlists', function ($playlists) {
+                return count($playlists) === 1 && $playlists[0]['id'] === 'spotify456';
+            });
+    }
+    
+    /** @test */
+    public function suchergebnisse_werden_nicht_gefiltert_wenn_nichts_gespeichert()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        
+        session(['spotify_access_token' => 'testtoken']);
+        
+        $this->mock(\App\Http\Controllers\PlaylistController::class, function ($mock) {
+            $mock->shouldAllowMockingProtectedMethods()
+            ->makePartial()
+            ->shouldReceive('searchSpotifyPlaylists')
+            ->andReturn([
+                ['id' => 'spotify999', 'name' => 'Unbekannte Playlist'],
+            ]);
+        });
+            
+            $response = $this->get(route('playlists.index', ['query' => 'Chill']));
+            
+            $response->assertStatus(200);
+            $response->assertViewHas('playlists', function ($playlists) {
+                return count($playlists) === 1 && $playlists[0]['id'] === 'spotify999';
+            });
+    }
+    
+    /** @test */
+    public function playlist_wird_nicht_faelschlich_aus_suchergebnissen_entfernt()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        
+        // Gespeicherte Playlist mit ID 'spotify123'
+        $gespeichertePlaylist = Playlist::factory()->create([
+            'spotify_id' => 'spotify123',
+            'name' => 'Gespeichert'
+        ]);
+        $user->playlists()->attach($gespeichertePlaylist);
+        
+        // Spotify liefert 'spotify1234' zurück → darf **nicht** gefiltert werden
+        session(['spotify_access_token' => 'testtoken']);
+        
+        $this->mock(\App\Http\Controllers\PlaylistController::class, function ($mock) {
+            $mock->shouldAllowMockingProtectedMethods()
+            ->makePartial()
+            ->shouldReceive('searchSpotifyPlaylists')
+            ->andReturn([
+                ['id' => 'spotify1234', 'name' => 'Fast gleich'],
+                ['id' => 'spotify123', 'name' => 'Exakt gleich'], // sollte raus
+            ]);
+        });
+            
+            $response = $this->get(route('playlists.index', ['query' => 'Test']));
+            
+            $response->assertStatus(200);
+            $response->assertViewHas('playlists', function ($playlists) {
+                // Nur 'spotify1234' darf übrig bleiben
+                return count($playlists) === 1 && $playlists[0]['id'] === 'spotify1234';
+            });
+    }
+    
 }
