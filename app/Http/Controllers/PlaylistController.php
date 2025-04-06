@@ -35,6 +35,14 @@ class PlaylistController extends Controller
         if ($query) {
             // Suche in der Spotify API, falls eine Suchanfrage existiert
             $playlists = $this->searchSpotifyPlaylists($query);
+            
+            // Holen der IDs der gespeicherten Playlists des Nutzers
+            $savedPlaylistIds = $savedPlaylists->pluck('spotify_id')->toArray();
+            
+            // Entfernen der gespeicherten Playlists aus den Suchergebnissen
+            $playlists = collect($playlists)->filter(function ($playlist) use ($savedPlaylistIds) {
+                return is_array($playlist) && isset($playlist['id']) && !in_array($playlist['id'], $savedPlaylistIds);
+            })->values()->all();
         }
         
         return view('playlists.index', compact('savedPlaylists', 'playlists'));
