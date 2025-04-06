@@ -25,6 +25,10 @@ class PlaylistController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+        
+        // Alle gespeicherten Spotify-IDs des Users (nicht paginiert)
+        $allSavedPlaylistIds = $user->playlists()->pluck('spotify_id')->toArray();
+        
         $savedPlaylists = $user->playlists()
         ->orderByRaw('cover_path IS NULL')  // NULLs werden "größer", also ans Ende sortiert
         ->orderBy('name')                   // dann alphabetisch
@@ -37,12 +41,9 @@ class PlaylistController extends Controller
             // Suche in der Spotify API, falls eine Suchanfrage existiert
             $playlists = $this->searchSpotifyPlaylists($query);
             
-            // Holen der IDs der gespeicherten Playlists des Nutzers
-            $savedPlaylistIds = $savedPlaylists->pluck('spotify_id')->toArray();
-            
             // Entfernen der gespeicherten Playlists aus den Suchergebnissen
-            $playlists = collect($playlists)->filter(function ($playlist) use ($savedPlaylistIds) {
-                return is_array($playlist) && isset($playlist['id']) && !in_array($playlist['id'], $savedPlaylistIds);
+            $playlists = collect($playlists)->filter(function ($playlist) use ($allSavedPlaylistIds) {
+                return is_array($playlist) && isset($playlist['id']) && !in_array($playlist['id'], $allSavedPlaylistIds);
             })->values()->all();
         }
         
