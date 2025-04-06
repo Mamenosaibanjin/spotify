@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Playlist;
 use App\Models\PlaylistSong;
 use App\Models\Song;
+use App\Models\SongAudioFeature;
 use App\Models\User;
 use App\Models\UserPlaylist;
 use Illuminate\Support\Facades\Http;
@@ -25,9 +26,9 @@ class PlaylistController extends Controller
     {
         $user = auth()->user();
         $savedPlaylists = $user->playlists()
-            ->orderByRaw('cover_path IS NULL')  // NULLs werden "größer", also ans Ende sortiert
-            ->orderBy('name')                   // dann alphabetisch
-            ->paginate(5);                      // Paginierte Playlists des Nutzers
+        ->orderByRaw('cover_path IS NULL')  // NULLs werden "größer", also ans Ende sortiert
+        ->orderBy('name')                   // dann alphabetisch
+        ->paginate(5);                      // Paginierte Playlists des Nutzers
         
         $query = $request->query('query');
         $playlists = [];
@@ -62,7 +63,7 @@ class PlaylistController extends Controller
     private function searchSpotifyPlaylists($query)
     {
         $accessToken = $this->getValidAccessToken();
-
+        
         if (!$accessToken) {
             return [];
         }
@@ -169,7 +170,7 @@ class PlaylistController extends Controller
         $refreshToken = session('spotify_refresh_token');
         
         if (!$refreshToken) {
-        //    return null;
+            //    return null;
         }
         
         $clientId = config('services.spotify.client_id');
@@ -181,7 +182,7 @@ class PlaylistController extends Controller
             'client_id' => $clientId,
             'client_secret' => $clientSecret,
         ]);
-
+        
         if ($response->successful()) {
             $data = $response->json();
             $newAccessToken = $data['access_token'];
@@ -190,9 +191,9 @@ class PlaylistController extends Controller
                 'spotify_access_token' => $newAccessToken,
                 'spotify_token_expires' => now()->addSeconds($data['expires_in']),
             ]);
-
+            
             return $newAccessToken;
-        } 
+        }
         
         return null;
     }
@@ -316,6 +317,19 @@ class PlaylistController extends Controller
                 'playlist_id' => $playlist->id,
                 'song_id' => $song->id
             ]);
+            
+            // Zufallswerte für Audio Features
+            // Ersetzt vorerst die API-Funktion 'Get Tracks Audio Feature'
+            SongAudioFeature::firstOrCreate([
+                'song_id' => $song->id
+            ], [
+                'loudness' => mt_rand(-2000, 2000) / 100,  // Zufälliger Wert für Loudness im Bereich von -20 bis 20
+                'tempo' => mt_rand(50, 200),                // Zufälliger Wert für Tempo im Bereich von 50 bis 200
+                'danceability' => mt_rand(0, 100) / 100,    // Zufälliger Wert für Danceability im Bereich von 0 bis 1
+                'energy' => mt_rand(0, 100) / 100           // Zufälliger Wert für Energy im Bereich von 0 bis 1
+            ]);
+            
+            
         }
         
         return response()->json(['message' => 'Playlist gespeichert']);

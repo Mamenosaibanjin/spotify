@@ -51,8 +51,8 @@
             <div class="col-md-6 mb-3">
                 <label>Loudness (dB)</label>
                 <div class="d-flex">
-                    <input type="number" step="0.1" name="loudness_min" class="form-control me-2" placeholder="Min." value="{{ request('loudness_min') }}" min="-100" max="0">
-                    <input type="number" step="0.1" name="loudness_max" class="form-control" placeholder="Max." value="{{ request('loudness_max') }}" min="-100" max="0">
+                    <input type="number" step="0.1" name="loudness_min" class="form-control me-2" placeholder="Min." value="{{ request('loudness_min') }}" min="-20" max="20">
+                    <input type="number" step="0.1" name="loudness_max" class="form-control" placeholder="Max." value="{{ request('loudness_max') }}" min="-20" max="20">
                 </div>
                 <div class="form-check mt-1">
                     <input class="form-check-input" type="checkbox" name="exact_match_loudness" id="exact_match_loudness" {{ request('exact_match_loudness') ? 'checked' : '' }}>
